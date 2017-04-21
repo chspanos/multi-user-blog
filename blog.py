@@ -216,11 +216,22 @@ class WelcomeHandler(Handler):
             code = action.split('|')[0]
             post_id = int(action.split('|')[1])
             if code == "edit":
-                # Edit blog
+                # Edit blog post
                 self.redirect('/blog/editpost?blog_id=%d' % post_id)
             elif code == "del":
-                # Delete blog
-                pass
+                # Delete blog post
+                post = BlogPost.get_by_id(post_id)
+                # Get user_id from cookie
+                user_id = self.request.cookies.get('user_id')
+                uid = user_id and check_secure_cookie(user_id)
+                # Look up this user in the database
+                user = uid and User.get_by_id(int(uid))
+                if user and post.author.name == user.name:
+                    post.delete()
+                    self.redirect('/blog/welcome')
+                else:
+                    # Invalid user, action not allowed
+                    self.redirect('/blog/login')
             else:
                 # Error
                 self.redirect('/blog/welcome')
