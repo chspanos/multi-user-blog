@@ -81,6 +81,10 @@ class BlogPost(db.Model):
     def get_id(self):
         return self.key().id()
 
+    def update_post_content(self, subject, content):
+        self.subject = subject
+        self.content = content
+
 
 # Page Handlers
 # Parent page handler
@@ -210,10 +214,10 @@ class WelcomeHandler(Handler):
         elif action:
             # Parse the action
             code = action.split('|')[0]
-            blog_id = int(action.split('|')[1])
+            post_id = int(action.split('|')[1])
             if code == "edit":
                 # Edit blog
-                pass
+                self.redirect('/blog/editpost?blog_id=%d' % post_id)
             elif code == "del":
                 # Delete blog
                 pass
@@ -269,6 +273,60 @@ class NewPost(Handler):
             self.redirect('/blog/login')
 
 
+# Edit blog post page
+class EditPost(Handler):
+    def get(self):
+        # Get post from id
+        blog_id = self.request.get('blog_id')
+        post = BlogPost.get_by_id(int(blog_id))
+        if post:
+            # Get user_id from cookie
+            user_id = self.request.cookies.get('user_id')
+            uid = user_id and check_secure_cookie(user_id)
+            # Look up this user in the database
+            user = uid and User.get_by_id(int(uid))
+            if user and post.author.name == user.name:
+                # render the form with the old content inserted
+                subject = post.subject
+                content = post.content
+                self.render('form2.html', subject=subject, content=content)
+            else:
+                # invalid user so redirect to login
+                self.redirect('/blog/login')
+        else:
+            # invalid post so redirect to welcome page
+            self.redireect('/blog/welcome')
+
+    def post(self):
+        # Get post from id
+        blog_id = int(self.request.get('blog_id'))
+        post = BlogPost.get_by_id(blog_id)
+        # Get user_id from cookie
+        user_id = self.request.cookies.get('user_id')
+        uid = user_id and check_secure_cookie(user_id)
+        # Look up this user in the database
+        user = uid and User.get_by_id(int(uid))
+        if user and post.author.name == user.name:
+            subject = self.request.get('subject')
+            content = self.request.get('content')
+
+            # Error checking on input
+            if subject and content:
+                # Update existing Blog Post
+                post.update_post_content(subject, content)
+                post.put()
+                # Redirect to permalink page
+                self.redirect('/blog/%d' % blog_id)
+            else:
+                # Error, so return to form
+                error = "Please enter subject and content"
+                self.render('form2.html', subject=subject, content=content,
+                            error=error)
+        else:
+            # user is invalid or not logged in
+            self.redirect('/blog/login')
+
+
 # Permalink blog page
 class PermalinkHandler(Handler):
     def get(self, blog_id):
@@ -283,5 +341,6 @@ app = webapp2.WSGIApplication([
     ('/blog/logout', LogoutHandler),
     ('/blog/welcome', WelcomeHandler),
     ('/blog/newpost', NewPost),
+    ('/blog/editpost', EditPost),
     (r'/blog/(\d+)', PermalinkHandler)
 ], debug=True)
