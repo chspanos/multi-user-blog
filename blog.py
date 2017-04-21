@@ -76,12 +76,21 @@ class BlogPost(db.Model):
     likes = db.ListProperty(db.Key, default=None)
 
     def like_count(self):
+        ''' Counts and returns number of likes. '''
         return len(self.likes)
 
     def get_id(self):
         return self.key().id()
 
+    def valid_author(self, user_id):
+        ''' Returns True if this is a valid user and the author of
+        this post. '''
+        user = user_id and User.get_by_id(int(user_id))
+        return user and self.author.name == user.name
+
     def update_post_content(self, subject, content):
+        ''' Updates post subject and content fields. Note: You still
+        need to put() to update database. '''
         self.subject = subject
         self.content = content
 
@@ -98,6 +107,15 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+
+    def get_post_id(self):
+        ''' Queries page input for blog_id and returns it as an integer. '''
+        return int(self.request.get('blog_id'))
+
+    def get_uid_from_cookie(self):
+        ''' Get user_id from cookie and check if valid. Returns valid id. '''
+        user_id = self.request.cookies.get('user_id')
+        return user_id and check_secure_cookie(user_id)
 
 
 # Signup page
@@ -162,20 +180,20 @@ class LoginHandler(Handler):
         self.render('login.html')
 
     def post(self):
-        # get user input
+        # Get user input
         username = self.request.get('username')
         password = self.request.get('password')
 
-        # check if user is in database
+        # Check if user is in database
         u = User.by_name(username)
         if u and valid_pw(username, password, u.hashed_pw):
-            # process a valid input
-            # set cookie to user_id
+            # Process a valid input
+            # Set cookie to user_id
             uid = u.key().id()
             user_id = make_secure_cookie(str(uid))
             self.response.headers.add_header('Set-Cookie',
                                     'user_id=%s; Path=/' % user_id)
-            # redirect to welcome page
+            # Redirect to welcome page
             self.redirect('/blog/welcome')
         else:
             # error
@@ -220,18 +238,7 @@ class WelcomeHandler(Handler):
                 self.redirect('/blog/editpost?blog_id=%d' % post_id)
             elif code == "del":
                 # Delete blog post
-                post = BlogPost.get_by_id(post_id)
-                # Get user_id from cookie
-                user_id = self.request.cookies.get('user_id')
-                uid = user_id and check_secure_cookie(user_id)
-                # Look up this user in the database
-                user = uid and User.get_by_id(int(uid))
-                if user and post.author.name == user.name:
-                    post.delete()
-                    self.redirect('/blog/welcome')
-                else:
-                    # Invalid user, action not allowed
-                    self.redirect('/blog/login')
+                self.redirect('/blog/delpost?blog_id=%d' % post_id)
             else:
                 # Error
                 self.redirect('/blog/welcome')
@@ -258,14 +265,12 @@ class NewPost(Handler):
 
     def post(self):
         # Get user_id from cookie
-        user_id = self.request.cookies.get('user_id')
-        uid = user_id and check_secure_cookie(user_id)
+        uid = self.get_uid_from_cookie()
         # Look up this user in the database
         user = uid and User.get_by_id(int(uid))
         if user:
             subject = self.request.get('subject')
             content = self.request.get('content')
-
             # Error checking on input
             if subject and content:
                 # Create new Blog Post
@@ -288,15 +293,13 @@ class NewPost(Handler):
 class EditPost(Handler):
     def get(self):
         # Get post from id
-        blog_id = self.request.get('blog_id')
-        post = BlogPost.get_by_id(int(blog_id))
+        blog_id = self.get_post_id()
+        post = BlogPost.get_by_id(blog_id)
         if post:
             # Get user_id from cookie
-            user_id = self.request.cookies.get('user_id')
-            uid = user_id and check_secure_cookie(user_id)
-            # Look up this user in the database
-            user = uid and User.get_by_id(int(uid))
-            if user and post.author.name == user.name:
+            uid = self.get_uid_from_cookie()
+            # Check for author of post
+            if uid and post.valid_author(uid):
                 # render the form with the old content inserted
                 subject = post.subject
                 content = post.content
@@ -306,36 +309,66 @@ class EditPost(Handler):
                 self.redirect('/blog/login')
         else:
             # invalid post so redirect to welcome page
-            self.redireect('/blog/welcome')
+            self.redirect('/blog/welcome')
 
     def post(self):
         # Get post from id
-        blog_id = int(self.request.get('blog_id'))
-        post = BlogPost.get_by_id(blog_id)
-        # Get user_id from cookie
-        user_id = self.request.cookies.get('user_id')
-        uid = user_id and check_secure_cookie(user_id)
-        # Look up this user in the database
-        user = uid and User.get_by_id(int(uid))
-        if user and post.author.name == user.name:
-            subject = self.request.get('subject')
-            content = self.request.get('content')
-
-            # Error checking on input
-            if subject and content:
-                # Update existing Blog Post
-                post.update_post_content(subject, content)
-                post.put()
-                # Redirect to permalink page
-                self.redirect('/blog/%d' % blog_id)
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        if blog_post:
+            # Get user_id from cookie
+            uid = self.get_uid_from_cookie()
+            # Check for author of post
+            if uid and blog_post.valid_author(uid):
+                # Get action
+                action = self.request.get('action')
+                if action and action == 'Save':
+                    # Update content
+                    subject = self.request.get('subject')
+                    content = self.request.get('content')
+                    # Error checking on input
+                    if subject and content:
+                        # Update existing Blog Post
+                        blog_post.update_post_content(subject, content)
+                        blog_post.put()
+                        # Redirect to permalink page
+                        self.redirect('/blog/%d' % blog_id)
+                    else:
+                        # Error, so return to form
+                        error = "Please enter subject and content"
+                        self.render('form2.html', subject=subject, content=content,
+                                    error=error)
+                else:
+                    # Cancel the edit and redirect to permalink page
+                    self.redirect('/blog/%d' % blog_id)
             else:
-                # Error, so return to form
-                error = "Please enter subject and content"
-                self.render('form2.html', subject=subject, content=content,
-                            error=error)
+                # User is invalid or not logged in
+                self.redirect('/blog/login')
         else:
-            # user is invalid or not logged in
-            self.redirect('/blog/login')
+            # Invalid post so redirect to welcome page
+            self.redirect('/blog/welcome')
+
+
+# Delete post handler
+class DeletePost(Handler):
+    def get(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        if blog_post:
+            # Get user_id from cookie
+            uid = self.get_uid_from_cookie()
+            # Check for author of post
+            if uid and blog_post.valid_author(uid):
+                # Delete entry
+                blog_post.delete()
+                self.redirect('/blog')
+            else:
+                # Invalid user, action not allowed
+                self.redirect('/blog/login')
+        else:
+            # Invalid post, so redirect to welcome page
+            self.redirect('/blog/welcome')
 
 
 # Permalink blog page
@@ -353,5 +386,6 @@ app = webapp2.WSGIApplication([
     ('/blog/welcome', WelcomeHandler),
     ('/blog/newpost', NewPost),
     ('/blog/editpost', EditPost),
+    ('/blog/delpost', DeletePost),
     (r'/blog/(\d+)', PermalinkHandler)
 ], debug=True)
