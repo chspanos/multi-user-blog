@@ -8,5 +8,12 @@
     </div>
     <hr>
     <pre class="blog-body">{{entry.content}}</pre>
+    <div class="blog-footer">
+        <div class="blog-author">Posted by {{entry.author.name}}</div>
+        <form class="likes">
+            <input type="button" id="{{entry.key().id()}}" value="Like">
+            {{entry.like_count()}}
+        </form>
+    </div>
 </div>
 {% endblock %}

@@ -63,19 +63,23 @@ class User(db.Model):
 
     @classmethod
     def by_name(cls, name):
-        query = "SELECT * FROM User WHERE name = '%s'" % name
-        users = db.GqlQuery(query)
-        for user in users:
-            if user.name == name:
-                return user
+        return cls.all().filter('name =', name).get()
 
 
 # Create our Blog database
 class BlogPost(db.Model):
+    author = db.ReferenceProperty(User)
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    likes = db.ListProperty(db.Key, default=None)
+
+    def like_count(self):
+        return len(self.likes)
+
+    def get_id(self):
+        return self.key().id()
 
 
 # Page Handlers
@@ -193,9 +197,32 @@ class WelcomeHandler(Handler):
         # Look up this user in the database
         user = uid and User.get_by_id(int(uid))
         if user:
-            self.render('welcome.html', username=user.name)
+            # Look up blog posts for this user
+            entries = BlogPost.all().filter('author =', user).order('-created')
+            self.render('welcome.html', username=user.name, entries=entries)
         else:
             self.redirect('/blog/signup')
+
+    def post(self):
+        action = self.request.get("post-action")
+        if action and action == "newpost":
+            self.redirect('/blog/newpost')
+        elif action:
+            # Parse the action
+            code = action.split('|')[0]
+            blog_id = int(action.split('|')[1])
+            if code == "edit":
+                # Edit blog
+                pass
+            elif code == "del":
+                # Delete blog
+                pass
+            else:
+                # Error
+                self.redirect('/blog/welcome')
+        else:
+            # Error
+            self.redirect('/blog/welcome')
 
 
 # Front Blog page
@@ -215,22 +242,31 @@ class NewPost(Handler):
         self.render('form.html')
 
     def post(self):
-        subject = self.request.get('subject')
-        content = self.request.get('content')
+        # Get user_id from cookie
+        user_id = self.request.cookies.get('user_id')
+        uid = user_id and check_secure_cookie(user_id)
+        # Look up this user in the database
+        user = uid and User.get_by_id(int(uid))
+        if user:
+            subject = self.request.get('subject')
+            content = self.request.get('content')
 
-        # Error checking on input
-        if subject and content:
-            # Create new Blog Post
-            b = BlogPost(subject=subject, content=content)
-            b.put()
-            # Redirect to permalink page
-            blog_id = b.key().id()
-            self.redirect('/blog/%d' % blog_id)
+            # Error checking on input
+            if subject and content:
+                # Create new Blog Post
+                b = BlogPost(author=user, subject=subject, content=content)
+                b.put()
+                # Redirect to permalink page
+                blog_id = b.key().id()
+                self.redirect('/blog/%d' % blog_id)
+            else:
+                # Error, so return to form
+                error = "Please enter subject and content"
+                self.render('form.html', subject=subject, content=content,
+                            error=error)
         else:
-            # Error, so return to form
-            error = "Please enter subject and content"
-            self.render('form.html', subject=subject, content=content,
-                        error=error)
+            # user is invalid or not logged in
+            self.redirect('/blog/login')
 
 
 # Permalink blog page

@@ -4,11 +4,17 @@
     {% for entry in entries %}
         <div class="blog-entry">
             <div class="blog-header">
-                <div class="blog-title">{{entry.subject}}</div>
+                <div class="blog-title">
+                    <a href="./blog/{{entry.get_id()}}">{{entry.subject}}</a>
+                </div>
                 <div class="blog-date">{{entry.created.strftime("%b %d, %Y")}}</div>
             </div>
             <hr>
             <pre class="blog-body">{{entry.content}}</pre>
+            <div class="blog-footer">
+                <div class="blog-author">Posted by {{entry.author.name}}</div>
+                <div class="likes">Likes {{entry.like_count()}}</div>
+            </div>
         </div>
     {% endfor %}
 {% endblock %}

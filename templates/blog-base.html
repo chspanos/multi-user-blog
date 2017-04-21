@@ -34,6 +34,11 @@
               text-align: left;
             }
 
+            .blog-title a,
+            .subject a {
+              text-decoration: none;
+            }
+
             .blog-date {
               font-size: 18px;
               width: 25%;
@@ -44,6 +49,24 @@
               margin: 0;
               font-size: 17px;
               white-space: pre-wrap;
+            }
+
+            .blog-footer {
+              display: inline-flex;
+              width: 100%;
+              margin-top: 10px;
+            }
+
+            .blog-author {
+              font-size: 12px;
+              font-style: italic;
+              width: 50%;
+            }
+
+            .likes {
+              font-size: 14px;
+              width: 50%;
+              text-align: right;
             }
 
             .error {
@@ -70,6 +93,38 @@
 
             input[type=submit] {
               font-size: 24px;
+            }
+
+            table {
+              table-layout: fixed;
+              width: 100%;
+              border-collapse: collapse;
+              border: 3px solid gray;
+            }
+
+            thead th:nth-child(1) {
+              width: 30%;
+            }
+
+            thead th:nth-child(2) {
+              width: 50%;
+            }
+
+            thead th:nth-child(3) {
+              width: 30%;
+            }
+
+            th, td {
+              padding: 5px;
+            }
+
+            tbody td {
+              text-align: center;
+            }
+
+            caption {
+              margin-bottom: 10px;
+              font-size: 18px;
             }
         </style>
     </head>
