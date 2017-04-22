@@ -73,7 +73,7 @@ class BlogPost(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
-    likes = db.ListProperty(db.Key, default=None)
+    likes = db.ListProperty(int, default=None)
 
     def like_count(self):
         ''' Counts and returns number of likes. '''
@@ -93,6 +93,14 @@ class BlogPost(db.Model):
         need to put() to update database. '''
         self.subject = subject
         self.content = content
+
+    def user_already_liked(self, user_id):
+        '''Returns True if this user already liked this post.'''
+        return int(user_id) in self.likes
+
+    def add_like(self, user_id):
+        ''' Add a like from this user '''
+        self.likes.append(int(user_id))
 
 
 # Page Handlers
@@ -376,6 +384,27 @@ class PermalinkHandler(Handler):
     def get(self, blog_id):
         entry = BlogPost.get_by_id(int(blog_id))
         self.render('permalink.html', entry=entry)
+
+    def post(self, blog_id):
+        entry = BlogPost.get_by_id(int(blog_id))
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        # Get action
+        action = self.request.get('action')
+        error = ""
+        if action == 'Like':
+            # Check if this user is allowed to like this post
+            if not uid:
+                # not logged in
+                self.redirect('/blog/login')
+            elif entry.valid_author(uid):
+                error = "Authors aren't permitted to like their own posts"
+            elif entry.user_already_liked(uid):
+                error = "Users are only permitted to like a post once"
+            else:
+                entry.add_like(uid)
+                entry.put()
+        self.render('permalink.html', entry=entry, error=error)
 
 
 app = webapp2.WSGIApplication([

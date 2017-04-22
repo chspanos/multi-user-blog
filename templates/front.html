@@ -13,7 +13,10 @@
             <pre class="blog-body">{{entry.content}}</pre>
             <div class="blog-footer">
                 <div class="blog-author">Posted by {{entry.author.name}}</div>
-                <div class="likes">Likes {{entry.like_count()}}</div>
+                <div class="likes">
+                  <a href="./blog/{{entry.get_id()}}">Leave a comment</a> |
+                  Likes {{entry.like_count()}}
+                </div>
             </div>
         </div>
     {% endfor %}
