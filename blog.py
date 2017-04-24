@@ -331,21 +331,27 @@ class NewPost(Handler):
         # Look up this user in the database
         user = uid and User.get_by_id(int(uid))
         if user:
-            subject = self.request.get('subject')
-            content = self.request.get('content')
-            # Error checking on input
-            if subject and content:
-                # Create new Blog Post
-                b = BlogPost(author=user, subject=subject, content=content)
-                b.put()
-                # Redirect to permalink page
-                blog_id = b.key().id()
-                self.redirect('/blog/%d' % blog_id)
+            # Get action
+            action = self.request.get('action')
+            if action and action == 'Save':
+                subject = self.request.get('subject')
+                content = self.request.get('content')
+                # Error checking on input
+                if subject and content:
+                    # Create new Blog Post
+                    b = BlogPost(author=user, subject=subject, content=content)
+                    b.put()
+                    # Redirect to permalink page
+                    blog_id = b.key().id()
+                    self.redirect('/blog/%d' % blog_id)
+                else:
+                    # Error, so return to form
+                    error = "Please enter subject and content"
+                    self.render('form.html', subject=subject, content=content,
+                                error=error)
             else:
-                # Error, so return to form
-                error = "Please enter subject and content"
-                self.render('form.html', subject=subject, content=content,
-                            error=error)
+                # Cancel the post and redirect to welcome page
+                self.redirect('/blog/welcome')
         else:
             # user is invalid or not logged in
             self.redirect('/blog/login')
@@ -365,7 +371,7 @@ class EditPost(Handler):
                 # render the form with the old content inserted
                 subject = post.subject
                 content = post.content
-                self.render('form2.html', subject=subject, content=content)
+                self.render('form.html', subject=subject, content=content)
             else:
                 # invalid user so redirect to login
                 self.redirect('/blog/login')
@@ -398,7 +404,7 @@ class EditPost(Handler):
                     else:
                         # Error, so return to form
                         error = "Please enter subject and content"
-                        self.render('form2.html', subject=subject, content=content,
+                        self.render('form.html', subject=subject, content=content,
                                     error=error)
                 else:
                     # Cancel the edit and redirect to permalink page

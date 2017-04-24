@@ -1,6 +1,6 @@
 {% extends "blog-base.html" %}
 {% block content %}
-<h2>New Post</h2>
+<h2>Post</h2>
 <form method="post">
     <label>
         <div>subject</div>
@@ -14,6 +14,7 @@
 
     <div class="error">{{error}}</div>
 
-    <input type="submit">
+    <input type="submit" name="action" value="Save">
+    <input type="submit" name="action" value="Cancel">
 </form>
 {% endblock %}
