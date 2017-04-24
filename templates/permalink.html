@@ -12,10 +12,22 @@
         <div class="blog-author">Posted by {{entry.author.name}}</div>
         <form method="post" class="likes">
             <input class="comment" type="submit" name="action" value="Comment">
+            {{entry.comment_count()}}
             <input class="like" type="submit" name="action" value="Like">
             {{entry.like_count()}}
         </form>
     </div>
     <div class="error">{{error}}</div>
+
+    {% for cid in entry.comments %}
+        <div class="blog-comment">
+            <hr class="comment-div">
+            <pre class="comment-body">{{entry.get_comment(cid)}}</pre>
+            <div class="blog-footer">
+                <div class="blog-author">Comment by {{entry.get_comment_author(cid)}}</div>
+            </div>
+        </div>
+    {% endfor %}
+
 </div>
 {% endblock %}

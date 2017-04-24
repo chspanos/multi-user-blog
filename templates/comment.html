@@ -1,0 +1,33 @@
+{% extends "blog-base.html" %}
+
+{% block content %}
+<div class="blog-entry">
+    <div class="blog-header">
+        <div class="blog-title">{{entry.subject}}</div>
+        <div class="blog-date">{{entry.created.strftime("%b %d, %Y")}}</div>
+    </div>
+    <hr>
+    <pre class="blog-body">{{entry.content}}</pre>
+    <div class="blog-footer">
+        <div class="blog-author">Posted by {{entry.author.name}}</div>
+        <div class="likes">
+          Comments {{entry.comment_count()}}
+          Likes {{entry.like_count()}}
+        </div>
+    </div>
+
+    <br>
+    <br>
+
+    <form method="post">
+        <label>
+            <div>comment</div>
+            <textarea name="comment">{{comment}}</textarea>
+        </label>
+
+        <div class="error">{{error}}</div>
+
+        <input type="submit">
+    </form>
+</div>
+{% endblock %}

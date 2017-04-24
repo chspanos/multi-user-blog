@@ -1,0 +1,152 @@
+body {
+  font-family: sans-serif;
+  width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+h1 {
+  text-align: center;
+}
+
+nav {
+  height: 40px;
+  text-align: right;
+}
+
+nav a {
+  border: 1px solid #bbb;
+  padding: 3px;
+  text-decoration: none;
+}
+
+hr {
+  border-bottom: 3px solid #bbb;
+}
+
+.blog-entry + .blog-entry{
+  margin-top: 20px;
+}
+
+.blog-header {
+  display: inline-flex;
+  width: 100%;
+}
+
+.blog-title {
+  font-weight: bold;
+  font-size: 20px;
+  width: 75%;
+  text-align: left;
+}
+
+.blog-title a,
+.subject a {
+  text-decoration: none;
+}
+
+.blog-date {
+  font-size: 18px;
+  width: 25%;
+  text-align: right;
+}
+
+.blog-body {
+  margin: 0;
+  font-size: 17px;
+  white-space: pre-wrap;
+}
+
+.blog-footer {
+  display: inline-flex;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.blog-author {
+  font-size: 12px;
+  font-style: italic;
+  width: 50%;
+}
+
+.likes {
+  font-size: 14px;
+  width: 50%;
+  text-align: right;
+}
+
+.likes a {
+  font-size: 12px;
+}
+
+.blog-comment {
+  margin: 10px 50px;
+}
+
+.comment-body {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.comment-div {
+  border-bottom: 1px solid #bbb;
+}
+
+.error {
+  color: red;
+}
+
+label {
+  display: block;
+  font-size: 20px;
+}
+
+input[type=text] {
+  width: 400px;
+  font-size: 20px;
+  padding: 2px;
+}
+
+textarea {
+  width: 400px;
+  height: 200px;
+  font-size: 17px;
+  font-family: monospace;
+}
+
+input[type=submit] {
+  font-size: 20px;
+}
+
+table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  border: 3px solid gray;
+}
+
+thead th:nth-child(1) {
+  width: 30%;
+}
+
+thead th:nth-child(2) {
+  width: 50%;
+}
+
+thead th:nth-child(3) {
+  width: 30%;
+}
+
+th, td {
+  padding: 5px;
+}
+
+tbody td {
+  text-align: center;
+}
+
+caption {
+  margin-bottom: 10px;
+  font-size: 18px;
+}

@@ -74,10 +74,7 @@ class BlogPost(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
     likes = db.ListProperty(int, default=None)
-
-    def like_count(self):
-        ''' Counts and returns number of likes. '''
-        return len(self.likes)
+    comments = db.ListProperty(int, default=None)
 
     def get_id(self):
         return self.key().id()
@@ -101,6 +98,48 @@ class BlogPost(db.Model):
     def add_like(self, user_id):
         ''' Add a like from this user '''
         self.likes.append(int(user_id))
+
+    def like_count(self):
+        ''' Returns number of likes. '''
+        return len(self.likes)
+
+    def add_comment(self, cid):
+        ''' Adds a comment id to the comments list '''
+        self.comments.append(cid)
+
+    def comment_count(self):
+        ''' Returns number of comments '''
+        return len(self.comments)
+
+    def get_comment(self, cid):
+        ''' Returns comment text '''
+        return Comment.get_text_by_id(cid)
+
+    def get_comment_author(self, cid):
+        ''' Returns comment author '''
+        return Comment.get_author_by_id(cid)
+
+
+# Create our comment database
+class Comment(db.Model):
+    blog_post = db.ReferenceProperty(BlogPost)
+    author = db.ReferenceProperty(User)
+    text = db.TextProperty(required = True)
+    created = db.DateTimeProperty(auto_now_add = True)
+    last_modified = db.DateTimeProperty(auto_now = True)
+
+    @classmethod
+    def get_text_by_id(cls, cid):
+        ''' Looks up comment by id and returns text '''
+        comment = cid and cls.get_by_id(cid)
+        return comment and comment.text
+
+    @classmethod
+    def get_author_by_id(cls, cid):
+        ''' Looks up comment by id and returns author name'''
+        comment = cid and cls.get_by_id(cid)
+        user = comment and comment.author
+        return user and user.name
 
 
 # Page Handlers
@@ -370,7 +409,7 @@ class DeletePost(Handler):
             if uid and blog_post.valid_author(uid):
                 # Delete entry
                 blog_post.delete()
-                self.redirect('/blog')
+                self.redirect('/blog/welcome')
             else:
                 # Invalid user, action not allowed
                 self.redirect('/blog/login')
@@ -399,12 +438,55 @@ class PermalinkHandler(Handler):
                 self.redirect('/blog/login')
             elif entry.valid_author(uid):
                 error = "Authors aren't permitted to like their own posts"
+                self.render('permalink.html', entry=entry, error=error)
             elif entry.user_already_liked(uid):
                 error = "Users are only permitted to like a post once"
+                self.render('permalink.html', entry=entry, error=error)
             else:
                 entry.add_like(uid)
                 entry.put()
-        self.render('permalink.html', entry=entry, error=error)
+                self.render('permalink.html', entry=entry)
+        elif action == 'Comment':
+            self.redirect('/blog/comment?blog_id=%d' % int(blog_id))
+        else:
+            error = "Invalid action"
+            self.render('permalink.html', entry=entry, error=error)
+
+
+class NewComment(Handler):
+    def get(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        self.render('comment.html', entry=blog_post)
+
+    def post(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        # Get user_id from cookie and lookup in User database
+        uid = self.get_uid_from_cookie()
+        user = uid and User.get_by_id(int(uid))
+        if user:
+            comment = self.request.get('comment')
+            if comment:
+                # Create new Comment object
+                c = Comment(blog_post=blog_post, author=user, text=comment)
+                c.put()
+                # Add comment to blog_post
+                cid = c.key().id()
+                blog_post.add_comment(cid)
+                blog_post.put()
+                # Redirect to permalink page
+                self.redirect('/blog/%d' % blog_id)
+            else:
+                # Error, so return to form
+                error = "Please enter a comment"
+                self.render('comment.html', entry=blog_post, comment=comment,
+                            error=error)
+        else:
+            # user is invalid or not logged in
+            self.redirect('/blog/login')
 
 
 app = webapp2.WSGIApplication([
@@ -416,5 +498,6 @@ app = webapp2.WSGIApplication([
     ('/blog/newpost', NewPost),
     ('/blog/editpost', EditPost),
     ('/blog/delpost', DeletePost),
-    (r'/blog/(\d+)', PermalinkHandler)
+    (r'/blog/(\d+)', PermalinkHandler),
+    ('/blog/comment', NewComment)
 ], debug=True)
