@@ -19,6 +19,7 @@
                 <div class="blog-author">Posted by {{entry.author.name}}</div>
                 <div class="likes">
                   <a href="./blog/{{entry.get_id()}}">Leave a comment</a> |
+                  Comments {{entry.comment_count()}} |
                   Likes {{entry.like_count()}}
                 </div>
             </div>

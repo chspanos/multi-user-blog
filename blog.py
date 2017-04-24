@@ -141,6 +141,17 @@ class Comment(db.Model):
         user = comment and comment.author
         return user and user.name
 
+    def valid_author(self, user_id):
+        ''' Returns True if this is a valid user and the author of
+        this comment. '''
+        user = user_id and User.get_by_id(int(user_id))
+        return user and self.author.name == user.name
+
+    def update_text(self, text):
+        ''' Updates comment text field. Note: You still
+        need to put() to update database. '''
+        self.text = text
+
 
 # Page Handlers
 # Parent page handler
@@ -163,6 +174,10 @@ class Handler(webapp2.RequestHandler):
         ''' Get user_id from cookie and check if valid. Returns valid id. '''
         user_id = self.request.cookies.get('user_id')
         return user_id and check_secure_cookie(user_id)
+
+    def get_comment_id(self):
+        ''' Queries page input for comment id and returns it as an int. '''
+        return int(self.request.get('cid'))
 
 
 # Signup page
@@ -468,22 +483,88 @@ class NewComment(Handler):
         uid = self.get_uid_from_cookie()
         user = uid and User.get_by_id(int(uid))
         if user:
-            comment = self.request.get('comment')
-            if comment:
-                # Create new Comment object
-                c = Comment(blog_post=blog_post, author=user, text=comment)
-                c.put()
-                # Add comment to blog_post
-                cid = c.key().id()
-                blog_post.add_comment(cid)
-                blog_post.put()
-                # Redirect to permalink page
-                self.redirect('/blog/%d' % blog_id)
+            # Get action
+            action = self.request.get('action')
+            if action and action == 'Save':
+                # get comment text
+                comment = self.request.get('comment')
+                if comment:
+                    # Create new Comment object
+                    c = Comment(blog_post=blog_post, author=user, text=comment)
+                    c.put()
+                    # Add comment to blog_post
+                    cid = c.key().id()
+                    blog_post.add_comment(cid)
+                    blog_post.put()
+                    # Redirect to permalink page
+                    self.redirect('/blog/%d' % blog_id)
+                else:
+                    # Error, so return to form
+                    error = "Please enter a comment"
+                    self.render('comment.html', entry=blog_post, comment=comment,
+                                error=error)
             else:
-                # Error, so return to form
-                error = "Please enter a comment"
-                self.render('comment.html', entry=blog_post, comment=comment,
+                # Cancel the edit and redirect to permalink page
+                self.redirect('/blog/%d' % blog_id)
+        else:
+            # user is invalid or not logged in
+            self.redirect('/blog/login')
+
+
+class EditComment(Handler):
+    def get(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        # Get comment from id
+        cid = self.get_comment_id()
+        comment = Comment.get_by_id(cid)
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        if uid:
+            if blog_post and comment and comment.valid_author(uid):
+                self.render('comment.html', entry=blog_post, comment=comment.text)
+            else:
+                msg = "Users can only edit comments they themselves have made. " \
+                    "Press either button to return to Permalink page."
+                self.render('comment.html', entry=blog_post,
+                    comment=comment.text, error=msg)
+        else:
+            self.redirect('/blog/login')
+
+    def post(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        # Get comment from id
+        cid = self.get_comment_id()
+        comment = Comment.get_by_id(cid)
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        if uid:
+            if blog_post and comment and comment.valid_author(uid):
+                # Get action
+                action = self.request.get('action')
+                if action and action == 'Save':
+                    # get new comment
+                    text = self.request.get('comment')
+                    if text:
+                        # Udpate comment with new content
+                        comment.update_text(text)
+                        comment.put()
+                        # Redirect to permalink page
+                        self.redirect('/blog/%d' % blog_id)
+                    else:
+                        # Error, so return to form
+                        error = "Please enter a comment"
+                        self.render('comment.html', entry=blog_post,
                             error=error)
+                else:
+                    # Cancel the edit and redirect to permalink page
+                    self.redirect('/blog/%d' % blog_id)
+            else:
+                # Cancel the edit and redirect to permalink page
+                self.redirect('/blog/%d' % blog_id)
         else:
             # user is invalid or not logged in
             self.redirect('/blog/login')
@@ -499,5 +580,6 @@ app = webapp2.WSGIApplication([
     ('/blog/editpost', EditPost),
     ('/blog/delpost', DeletePost),
     (r'/blog/(\d+)', PermalinkHandler),
-    ('/blog/comment', NewComment)
+    ('/blog/comment', NewComment),
+    ('/blog/editcmt', EditComment)
 ], debug=True)

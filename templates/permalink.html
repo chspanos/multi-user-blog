@@ -11,9 +11,9 @@
     <div class="blog-footer">
         <div class="blog-author">Posted by {{entry.author.name}}</div>
         <form method="post" class="likes">
-            <input class="comment" type="submit" name="action" value="Comment">
+            <input type="submit" name="action" value="Comment">
             {{entry.comment_count()}}
-            <input class="like" type="submit" name="action" value="Like">
+            <input type="submit" name="action" value="Like">
             {{entry.like_count()}}
         </form>
     </div>
@@ -24,7 +24,14 @@
             <hr class="comment-div">
             <pre class="comment-body">{{entry.get_comment(cid)}}</pre>
             <div class="blog-footer">
-                <div class="blog-author">Comment by {{entry.get_comment_author(cid)}}</div>
+                <div class="blog-author">
+                    Comment by {{entry.get_comment_author(cid)}}
+                </div>
+
+                <div class="likes">
+                    <a href="/blog/editcmt?blog_id={{entry.get_id()}}&cid={{cid}}">
+                        Edit</a>
+                </div>
             </div>
         </div>
     {% endfor %}
