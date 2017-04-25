@@ -119,6 +119,10 @@ class BlogPost(db.Model):
         ''' Returns comment author '''
         return Comment.get_author_by_id(cid)
 
+    def delete_comment(self, cid):
+        ''' Deletes this comment id from the comments list '''
+        self.comments.remove(cid)
+
 
 # Create our comment database
 class Comment(db.Model):
@@ -531,10 +535,8 @@ class EditComment(Handler):
             if blog_post and comment and comment.valid_author(uid):
                 self.render('comment.html', entry=blog_post, comment=comment.text)
             else:
-                msg = "Users can only edit comments they themselves have made. " \
-                    "Press either button to return to Permalink page."
-                self.render('comment.html', entry=blog_post,
-                    comment=comment.text, error=msg)
+                msg = "Users can only edit comments they themselves have made."
+                self.render('permalink.html', entry=blog_post, error=msg)
         else:
             self.redirect('/blog/login')
 
@@ -576,6 +578,34 @@ class EditComment(Handler):
             self.redirect('/blog/login')
 
 
+class DeleteComment(Handler):
+    def get(self):
+        # Get post from id
+        blog_id = self.get_post_id()
+        blog_post = BlogPost.get_by_id(blog_id)
+        # Get comment from id
+        cid = self.get_comment_id()
+        comment = Comment.get_by_id(cid)
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        if uid:
+            if blog_post and comment and comment.valid_author(uid):
+                # remove comment from blog
+                blog_post.delete_comment(cid)
+                blog_post.put()
+                # Delete comment
+                comment.delete()
+                # redirect to permalink page
+                self.redirect('/blog/%d' % blog_id)
+            else:
+                # Action not allowed
+                error = "Users can only delete comments they have made."
+                self.render('permalink.html', entry=blog_post, error=error)
+        else:
+            # Invalid user, action not allowed
+            self.redirect('/blog/login')
+
+
 app = webapp2.WSGIApplication([
     ('/blog', MainPage),
     ('/blog/signup', SignupHandler),
@@ -587,5 +617,6 @@ app = webapp2.WSGIApplication([
     ('/blog/delpost', DeletePost),
     (r'/blog/(\d+)', PermalinkHandler),
     ('/blog/comment', NewComment),
-    ('/blog/editcmt', EditComment)
+    ('/blog/editcmt', EditComment),
+    ('/blog/delcmt', DeleteComment)
 ], debug=True)
