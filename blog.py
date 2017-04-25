@@ -79,10 +79,9 @@ class BlogPost(db.Model):
     def get_id(self):
         return self.key().id()
 
-    def valid_author(self, user_id):
+    def valid_author(self, user):
         ''' Returns True if this is a valid user and the author of
         this post. '''
-        user = user_id and User.get_by_id(int(user_id))
         return user and self.author.name == user.name
 
     def update_post_content(self, subject, content):
@@ -145,10 +144,9 @@ class Comment(db.Model):
         user = comment and comment.author
         return user and user.name
 
-    def valid_author(self, user_id):
+    def valid_author(self, user):
         ''' Returns True if this is a valid user and the author of
         this comment. '''
-        user = user_id and User.get_by_id(int(user_id))
         return user and self.author.name == user.name
 
     def update_text(self, text):
@@ -164,20 +162,30 @@ class Handler(webapp2.RequestHandler):
         self.response.write(*a, **kw)
 
     def render_str(self, template, **params):
+        # add user to the parameter list automatically
+        params['user'] = self.user
+        # set template and call render like before
         t = jinja_env.get_template(template)
         return t.render(params)
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
-    def get_post_id(self):
-        ''' Queries page input for blog_id and returns it as an integer. '''
-        return int(self.request.get('blog_id'))
-
     def get_uid_from_cookie(self):
         ''' Get user_id from cookie and check if valid. Returns valid id. '''
         user_id = self.request.cookies.get('user_id')
         return user_id and check_secure_cookie(user_id)
+
+    def initialize(self, *a, **kw):
+        ''' Overwrite Handler initialize method to also check for and
+        load user info from cookie '''
+        webapp2.RequestHandler.initialize(self, *a, **kw)
+        uid = self.get_uid_from_cookie()
+        self.user = uid and User.get_by_id(int(uid))
+
+    def get_post_id(self):
+        ''' Queries page input for blog_id and returns it as an integer. '''
+        return int(self.request.get('blog_id'))
 
     def get_comment_id(self):
         ''' Queries page input for comment id and returns it as an int. '''
@@ -279,14 +287,11 @@ class LogoutHandler(Handler):
 # Welcome page
 class WelcomeHandler(Handler):
     def get(self):
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        user = uid and User.get_by_id(int(uid))
-        if user:
+        # if user is logged in
+        if self.user:
             # Look up blog posts for this user
-            entries = BlogPost.all().filter('author =', user).order('-created')
-            self.render('welcome.html', user=uid, username=user.name,
-                        entries=entries)
+            entries = BlogPost.all().filter('author =', self.user).order('-created')
+            self.render('welcome.html', username=self.user.name, entries=entries)
         else:
             self.redirect('/blog/signup')
 
@@ -315,27 +320,19 @@ class WelcomeHandler(Handler):
 # Front Blog page
 class MainPage(Handler):
     def get(self):
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
         # Get blog entries
         entries = db.GqlQuery("SELECT * FROM BlogPost "
                            "ORDER BY created DESC LIMIT 10")
-        self.render('front.html', entries=entries, user=uid)
+        self.render('front.html', entries=entries)
 
 
 # New blog post entry page
 class NewPost(Handler):
     def get(self):
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        self.render('form.html', user=uid)
+        self.render('form.html')
 
     def post(self):
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        # Look up this user in the database
-        user = uid and User.get_by_id(int(uid))
-        if user:
+        if self.user:
             # Get action
             action = self.request.get('action')
             if action and action == 'Save':
@@ -344,7 +341,7 @@ class NewPost(Handler):
                 # Error checking on input
                 if subject and content:
                     # Create new Blog Post
-                    b = BlogPost(author=user, subject=subject, content=content)
+                    b = BlogPost(author=self.user, subject=subject, content=content)
                     b.put()
                     # Redirect to permalink page
                     blog_id = b.key().id()
@@ -353,7 +350,7 @@ class NewPost(Handler):
                     # Error, so return to form
                     error = "Please enter subject and content"
                     self.render('form.html', subject=subject, content=content,
-                                error=error, user=uid)
+                                error=error)
             else:
                 # Cancel the post and redirect to welcome page
                 self.redirect('/blog/welcome')
@@ -369,15 +366,12 @@ class EditPost(Handler):
         blog_id = self.get_post_id()
         post = BlogPost.get_by_id(blog_id)
         if post:
-            # Get user_id from cookie
-            uid = self.get_uid_from_cookie()
             # Check for author of post
-            if uid and post.valid_author(uid):
+            if self.user and post.valid_author(self.user):
                 # render the form with the old content inserted
                 subject = post.subject
                 content = post.content
-                self.render('form.html', subject=subject, content=content,
-                            user=uid)
+                self.render('form.html', subject=subject, content=content)
             else:
                 # invalid user so redirect to login
                 self.redirect('/blog/login')
@@ -390,10 +384,8 @@ class EditPost(Handler):
         blog_id = self.get_post_id()
         blog_post = BlogPost.get_by_id(blog_id)
         if blog_post:
-            # Get user_id from cookie
-            uid = self.get_uid_from_cookie()
             # Check for author of post
-            if uid and blog_post.valid_author(uid):
+            if self.user and blog_post.valid_author(self.user):
                 # Get action
                 action = self.request.get('action')
                 if action and action == 'Save':
@@ -411,7 +403,7 @@ class EditPost(Handler):
                         # Error, so return to form
                         error = "Please enter subject and content"
                         self.render('form.html', subject=subject,
-                            content=content, error=error, user=uid)
+                            content=content, error=error)
                 else:
                     # Cancel the edit and redirect to permalink page
                     self.redirect('/blog/%d' % blog_id)
@@ -430,10 +422,8 @@ class DeletePost(Handler):
         blog_id = self.get_post_id()
         blog_post = BlogPost.get_by_id(blog_id)
         if blog_post:
-            # Get user_id from cookie
-            uid = self.get_uid_from_cookie()
             # Check for author of post
-            if uid and blog_post.valid_author(uid):
+            if self.user and blog_post.valid_author(self.user):
                 # Delete entry
                 blog_post.delete()
                 self.redirect('/blog/welcome')
@@ -448,37 +438,36 @@ class DeletePost(Handler):
 # Permalink blog page
 class PermalinkHandler(Handler):
     def get(self, blog_id):
-        uid = self.get_uid_from_cookie()
         entry = BlogPost.get_by_id(int(blog_id))
-        self.render('permalink.html', user=uid, entry=entry)
+        self.render('permalink.html', entry=entry)
 
     def post(self, blog_id):
         entry = BlogPost.get_by_id(int(blog_id))
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
         # Get action
         action = self.request.get('action')
         error = ""
         if action == 'Like':
+            # get user id
+            uid = self.user and self.user.key().id()
             # Check if this user is allowed to like this post
             if not uid:
                 # not logged in
                 self.redirect('/blog/login')
-            elif entry.valid_author(uid):
+            elif entry.valid_author(self.user):
                 error = "Authors aren't permitted to like their own posts"
-                self.render('permalink.html', user=uid, entry=entry, error=error)
+                self.render('permalink.html', entry=entry, error=error)
             elif entry.user_already_liked(uid):
                 error = "Users are only permitted to like a post once"
-                self.render('permalink.html', user=uid, entry=entry, error=error)
+                self.render('permalink.html', entry=entry, error=error)
             else:
                 entry.add_like(uid)
                 entry.put()
-                self.render('permalink.html', user=uid, entry=entry)
+                self.render('permalink.html', entry=entry)
         elif action == 'Comment':
             self.redirect('/blog/comment?blog_id=%d' % int(blog_id))
         else:
             error = "Invalid action"
-            self.render('permalink.html', user=uid, entry=entry, error=error)
+            self.render('permalink.html', entry=entry, error=error)
 
 
 class NewComment(Handler):
@@ -486,18 +475,14 @@ class NewComment(Handler):
         # Get post from id
         blog_id = self.get_post_id()
         blog_post = BlogPost.get_by_id(blog_id)
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        self.render('comment.html', user=uid, entry=blog_post)
+        self.render('comment.html', entry=blog_post)
 
     def post(self):
         # Get post from id
         blog_id = self.get_post_id()
         blog_post = BlogPost.get_by_id(blog_id)
-        # Get user_id from cookie and lookup in User database
-        uid = self.get_uid_from_cookie()
-        user = uid and User.get_by_id(int(uid))
-        if user:
+        # Check user
+        if self.user:
             # Get action
             action = self.request.get('action')
             if action and action == 'Save':
@@ -505,7 +490,7 @@ class NewComment(Handler):
                 comment = self.request.get('comment')
                 if comment:
                     # Create new Comment object
-                    c = Comment(blog_post=blog_post, author=user, text=comment)
+                    c = Comment(blog_post=blog_post, author=self.user, text=comment)
                     c.put()
                     # Add comment to blog_post
                     cid = c.key().id()
@@ -517,7 +502,7 @@ class NewComment(Handler):
                     # Error, so return to form
                     error = "Please enter a comment"
                     self.render('comment.html', entry=blog_post, comment=comment,
-                                error=error, user=uid)
+                                error=error)
             else:
                 # Cancel the edit and redirect to permalink page
                 self.redirect('/blog/%d' % blog_id)
@@ -534,16 +519,14 @@ class EditComment(Handler):
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        if uid:
-            if blog_post and comment and comment.valid_author(uid):
-                self.render('comment.html', user=uid, entry=blog_post,
+        # Check user
+        if self.user:
+            if blog_post and comment and comment.valid_author(self.user):
+                self.render('comment.html', entry=blog_post,
                             comment=comment.text)
             else:
                 msg = "Users can only edit comments they themselves have made."
-                self.render('permalink.html', user=uid, entry=blog_post,
-                            error=msg)
+                self.render('permalink.html', entry=blog_post, error=msg)
         else:
             self.redirect('/blog/login')
 
@@ -554,10 +537,9 @@ class EditComment(Handler):
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        if uid:
-            if blog_post and comment and comment.valid_author(uid):
+        # Check user
+        if self.user:
+            if blog_post and comment and comment.valid_author(self.user):
                 # Get action
                 action = self.request.get('action')
                 if action and action == 'Save':
@@ -572,7 +554,7 @@ class EditComment(Handler):
                     else:
                         # Error, so return to form
                         error = "Please enter a comment"
-                        self.render('comment.html', user=uid, entry=blog_post,
+                        self.render('comment.html', entry=blog_post,
                             error=error)
                 else:
                     # Cancel the edit and redirect to permalink page
@@ -593,10 +575,9 @@ class DeleteComment(Handler):
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
-        # Get user_id from cookie
-        uid = self.get_uid_from_cookie()
-        if uid:
-            if blog_post and comment and comment.valid_author(uid):
+        # Check user
+        if self.user:
+            if blog_post and comment and comment.valid_author(self.user):
                 # remove comment from blog
                 blog_post.delete_comment(cid)
                 blog_post.put()
@@ -607,8 +588,7 @@ class DeleteComment(Handler):
             else:
                 # Action not allowed
                 error = "Users can only delete comments they have made."
-                self.render('permalink.html', user=uid, entry=blog_post,
-                            error=error)
+                self.render('permalink.html', entry=blog_post, error=error)
         else:
             # Invalid user, action not allowed
             self.redirect('/blog/login')
