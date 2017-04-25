@@ -6,6 +6,16 @@
     </head>
 
     <body>
+        <nav>
+            <a href="/blog">Home</a>
+            {% if user %}
+                <a href="/blog/welcome">Welcome</a>
+                <a href="/blog/logout">Logout</a>
+            {% else %}
+                <a href="/blog/signup">Signup</a>
+                <a href="/blog/login">Login</a>
+            {% endif %}
+        </nav>
         <h1>Multi-User Blog</h1>
         <div id="content">
             {% block content %}

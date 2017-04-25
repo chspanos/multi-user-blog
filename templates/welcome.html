@@ -17,7 +17,7 @@
             <tr>
                 <td class="date">{{entry.created.strftime("%b %d, %Y")}}</td>
                 <td class="subject">
-                  <a href="./{{entry.get_id()}}">{{entry.subject}}</a>
+                  <a href="/blog/{{entry.get_id()}}">{{entry.subject}}</a>
                 </td>
                 <td>
                       <input type="radio" name="post-action" value="edit|{{entry.get_id()}}">
@@ -40,5 +40,5 @@
 </form>
 <p>{{error}}</p>
 
-<p>Done? <a href="./logout">Logout</a> </p>
+<p>Done? <a href="/blog/logout">Logout</a> </p>
 {% endblock %}

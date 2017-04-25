@@ -280,14 +280,13 @@ class LogoutHandler(Handler):
 class WelcomeHandler(Handler):
     def get(self):
         # Get user_id from cookie
-        user_id = self.request.cookies.get('user_id')
-        uid = user_id and check_secure_cookie(user_id)
-        # Look up this user in the database
+        uid = self.get_uid_from_cookie()
         user = uid and User.get_by_id(int(uid))
         if user:
             # Look up blog posts for this user
             entries = BlogPost.all().filter('author =', user).order('-created')
-            self.render('welcome.html', username=user.name, entries=entries)
+            self.render('welcome.html', user=uid, username=user.name,
+                        entries=entries)
         else:
             self.redirect('/blog/signup')
 
@@ -315,19 +314,21 @@ class WelcomeHandler(Handler):
 
 # Front Blog page
 class MainPage(Handler):
-    def render_front(self):
+    def get(self):
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        # Get blog entries
         entries = db.GqlQuery("SELECT * FROM BlogPost "
                            "ORDER BY created DESC LIMIT 10")
-        self.render('front.html', entries=entries)
-
-    def get(self):
-        self.render_front()
+        self.render('front.html', entries=entries, user=uid)
 
 
 # New blog post entry page
 class NewPost(Handler):
     def get(self):
-        self.render('form.html')
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        self.render('form.html', user=uid)
 
     def post(self):
         # Get user_id from cookie
@@ -352,7 +353,7 @@ class NewPost(Handler):
                     # Error, so return to form
                     error = "Please enter subject and content"
                     self.render('form.html', subject=subject, content=content,
-                                error=error)
+                                error=error, user=uid)
             else:
                 # Cancel the post and redirect to welcome page
                 self.redirect('/blog/welcome')
@@ -375,7 +376,8 @@ class EditPost(Handler):
                 # render the form with the old content inserted
                 subject = post.subject
                 content = post.content
-                self.render('form.html', subject=subject, content=content)
+                self.render('form.html', subject=subject, content=content,
+                            user=uid)
             else:
                 # invalid user so redirect to login
                 self.redirect('/blog/login')
@@ -408,8 +410,8 @@ class EditPost(Handler):
                     else:
                         # Error, so return to form
                         error = "Please enter subject and content"
-                        self.render('form.html', subject=subject, content=content,
-                                    error=error)
+                        self.render('form.html', subject=subject,
+                            content=content, error=error, user=uid)
                 else:
                     # Cancel the edit and redirect to permalink page
                     self.redirect('/blog/%d' % blog_id)
@@ -446,8 +448,9 @@ class DeletePost(Handler):
 # Permalink blog page
 class PermalinkHandler(Handler):
     def get(self, blog_id):
+        uid = self.get_uid_from_cookie()
         entry = BlogPost.get_by_id(int(blog_id))
-        self.render('permalink.html', entry=entry)
+        self.render('permalink.html', user=uid, entry=entry)
 
     def post(self, blog_id):
         entry = BlogPost.get_by_id(int(blog_id))
@@ -463,19 +466,19 @@ class PermalinkHandler(Handler):
                 self.redirect('/blog/login')
             elif entry.valid_author(uid):
                 error = "Authors aren't permitted to like their own posts"
-                self.render('permalink.html', entry=entry, error=error)
+                self.render('permalink.html', user=uid, entry=entry, error=error)
             elif entry.user_already_liked(uid):
                 error = "Users are only permitted to like a post once"
-                self.render('permalink.html', entry=entry, error=error)
+                self.render('permalink.html', user=uid, entry=entry, error=error)
             else:
                 entry.add_like(uid)
                 entry.put()
-                self.render('permalink.html', entry=entry)
+                self.render('permalink.html', user=uid, entry=entry)
         elif action == 'Comment':
             self.redirect('/blog/comment?blog_id=%d' % int(blog_id))
         else:
             error = "Invalid action"
-            self.render('permalink.html', entry=entry, error=error)
+            self.render('permalink.html', user=uid, entry=entry, error=error)
 
 
 class NewComment(Handler):
@@ -483,7 +486,9 @@ class NewComment(Handler):
         # Get post from id
         blog_id = self.get_post_id()
         blog_post = BlogPost.get_by_id(blog_id)
-        self.render('comment.html', entry=blog_post)
+        # Get user_id from cookie
+        uid = self.get_uid_from_cookie()
+        self.render('comment.html', user=uid, entry=blog_post)
 
     def post(self):
         # Get post from id
@@ -512,7 +517,7 @@ class NewComment(Handler):
                     # Error, so return to form
                     error = "Please enter a comment"
                     self.render('comment.html', entry=blog_post, comment=comment,
-                                error=error)
+                                error=error, user=uid)
             else:
                 # Cancel the edit and redirect to permalink page
                 self.redirect('/blog/%d' % blog_id)
@@ -533,10 +538,12 @@ class EditComment(Handler):
         uid = self.get_uid_from_cookie()
         if uid:
             if blog_post and comment and comment.valid_author(uid):
-                self.render('comment.html', entry=blog_post, comment=comment.text)
+                self.render('comment.html', user=uid, entry=blog_post,
+                            comment=comment.text)
             else:
                 msg = "Users can only edit comments they themselves have made."
-                self.render('permalink.html', entry=blog_post, error=msg)
+                self.render('permalink.html', user=uid, entry=blog_post,
+                            error=msg)
         else:
             self.redirect('/blog/login')
 
@@ -565,7 +572,7 @@ class EditComment(Handler):
                     else:
                         # Error, so return to form
                         error = "Please enter a comment"
-                        self.render('comment.html', entry=blog_post,
+                        self.render('comment.html', user=uid, entry=blog_post,
                             error=error)
                 else:
                     # Cancel the edit and redirect to permalink page
@@ -600,7 +607,8 @@ class DeleteComment(Handler):
             else:
                 # Action not allowed
                 error = "Users can only delete comments they have made."
-                self.render('permalink.html', entry=blog_post, error=error)
+                self.render('permalink.html', user=uid, entry=blog_post,
+                            error=error)
         else:
             # Invalid user, action not allowed
             self.redirect('/blog/login')

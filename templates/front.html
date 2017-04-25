@@ -1,15 +1,11 @@
 {% extends "blog-base.html" %}
 
 {% block content %}
-    <nav>
-        <a href="blog/signup">Sign In</a>
-        <a href="blog/welcome">Welcome</a>
-    </nav>
     {% for entry in entries %}
         <div class="blog-entry">
             <div class="blog-header">
                 <div class="blog-title">
-                    <a href="./blog/{{entry.get_id()}}">{{entry.subject}}</a>
+                    <a href="/blog/{{entry.get_id()}}">{{entry.subject}}</a>
                 </div>
                 <div class="blog-date">{{entry.created.strftime("%b %d, %Y")}}</div>
             </div>
@@ -18,9 +14,9 @@
             <div class="blog-footer">
                 <div class="blog-author">Posted by {{entry.author.name}}</div>
                 <div class="likes">
-                  <a href="./blog/{{entry.get_id()}}">Leave a comment</a> |
-                  Comments {{entry.comment_count()}} |
-                  Likes {{entry.like_count()}}
+                    <a href="/blog/{{entry.get_id()}}">Leave a comment</a> |
+                    Comments {{entry.comment_count()}} |
+                    Likes {{entry.like_count()}}
                 </div>
             </div>
         </div>
