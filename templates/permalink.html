@@ -10,14 +10,16 @@
     <pre class="blog-body">{{entry.content}}</pre>
     <div class="blog-footer">
         <div class="blog-author">Posted by {{entry.author.name}}</div>
-        <form method="post" class="likes">
-            <input type="submit" name="action" value="Comment">
+        <nav class="likes">
+            <a href="/blog/comment?blog_id={{entry.get_id()}}">Comment</a>
             {{entry.comment_count()}}
-            <input type="submit" name="action" value="Like">
+            <a href="/blog/{{entry.get_id()}}/like">Like</a>
             {{entry.like_count()}}
-        </form>
+        </nav>
     </div>
     <div class="error">{{error}}</div>
+    <br>
+    <br>
 
     {% for cid in entry.comments %}
         <div class="blog-comment">
@@ -28,12 +30,13 @@
                     Comment by {{entry.get_comment_author(cid)}}
                 </div>
 
-                <div class="likes">
+                <nav class="edits">
                     <a href="/blog/editcmt?blog_id={{entry.get_id()}}&cid={{cid}}">
                         Edit</a>
                     <a href="/blog/delcmt?blog_id={{entry.get_id()}}&cid={{cid}}">
-                        Delete</a>  
-                </div>
+                        Delete</a>
+                </nav>
+
             </div>
         </div>
     {% endfor %}

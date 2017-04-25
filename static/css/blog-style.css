@@ -10,14 +10,16 @@ h1 {
 }
 
 nav {
-  height: 40px;
   text-align: right;
 }
 
 nav a {
-  border: 1px solid #bbb;
+  background-color: buttonface;
+  border: 2px outset buttonface;
   padding: 3px;
+  font-size: 20px;
   text-decoration: none;
+  margin-left: 5px;
 }
 
 hr {
@@ -76,7 +78,7 @@ hr {
 }
 
 .likes a {
-  font-size: 12px;
+  font-size: 16px;
   margin-left: 10px;
 }
 
@@ -92,6 +94,16 @@ hr {
 
 .comment-div {
   border-bottom: 1px solid #bbb;
+}
+
+.edits {
+  width: 50%;
+  text-align: right;
+}
+
+.edits a {
+  font-size: 14px;
+  margin-left: 10px;
 }
 
 .error {

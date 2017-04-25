@@ -441,35 +441,30 @@ class PermalinkHandler(Handler):
         entry = BlogPost.get_by_id(int(blog_id))
         self.render('permalink.html', entry=entry)
 
-    def post(self, blog_id):
+# Like post handler
+class LikeHandler(Handler):
+    def get(self, blog_id):
+        # get blog entry
         entry = BlogPost.get_by_id(int(blog_id))
-        # Get action
-        action = self.request.get('action')
-        error = ""
-        if action == 'Like':
-            # get user id
-            uid = self.user and self.user.key().id()
-            # Check if this user is allowed to like this post
-            if not uid:
-                # not logged in
-                self.redirect('/blog/login')
-            elif entry.valid_author(self.user):
-                error = "Authors aren't permitted to like their own posts"
-                self.render('permalink.html', entry=entry, error=error)
-            elif entry.user_already_liked(uid):
-                error = "Users are only permitted to like a post once"
-                self.render('permalink.html', entry=entry, error=error)
-            else:
-                entry.add_like(uid)
-                entry.put()
-                self.render('permalink.html', entry=entry)
-        elif action == 'Comment':
-            self.redirect('/blog/comment?blog_id=%d' % int(blog_id))
-        else:
-            error = "Invalid action"
+        # get user id
+        uid = self.user and self.user.key().id()
+        # Check if this user is allowed to like this post
+        if not uid:
+            # not logged in
+            self.redirect('/blog/login')
+        elif entry.valid_author(self.user):
+            error = "Authors aren't permitted to like their own posts"
             self.render('permalink.html', entry=entry, error=error)
+        elif entry.user_already_liked(uid):
+            error = "Users are only permitted to like a post once"
+            self.render('permalink.html', entry=entry, error=error)
+        else:
+            entry.add_like(uid)
+            entry.put()
+            self.render('permalink.html', entry=entry)
 
 
+# New comment page handler
 class NewComment(Handler):
     def get(self):
         # Get post from id
@@ -511,6 +506,7 @@ class NewComment(Handler):
             self.redirect('/blog/login')
 
 
+# Edit comment page handler
 class EditComment(Handler):
     def get(self):
         # Get post from id
@@ -567,6 +563,7 @@ class EditComment(Handler):
             self.redirect('/blog/login')
 
 
+# Delete comment handler
 class DeleteComment(Handler):
     def get(self):
         # Get post from id
@@ -604,6 +601,7 @@ app = webapp2.WSGIApplication([
     ('/blog/editpost', EditPost),
     ('/blog/delpost', DeletePost),
     (r'/blog/(\d+)', PermalinkHandler),
+    (r'/blog/(\d+)/like', LikeHandler),
     ('/blog/comment', NewComment),
     ('/blog/editcmt', EditComment),
     ('/blog/delcmt', DeleteComment)
