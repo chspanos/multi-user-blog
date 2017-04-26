@@ -11,7 +11,7 @@
     <div class="blog-footer">
         <div class="blog-author">Posted by {{entry.author.name}}</div>
         <nav class="likes">
-            <a href="/blog/comment?blog_id={{entry.get_id()}}">Comment</a>
+            <a href="/blog/{{entry.get_id()}}/comment">Comment</a>
             {{entry.comment_count()}}
             <a href="/blog/{{entry.get_id()}}/like">Like</a>
             {{entry.like_count()}}
@@ -30,12 +30,14 @@
                     Comment by {{entry.get_comment_author(cid)}}
                 </div>
 
-                <nav class="edits">
-                    <a href="/blog/editcmt?blog_id={{entry.get_id()}}&cid={{cid}}">
-                        Edit</a>
-                    <a href="/blog/delcmt?blog_id={{entry.get_id()}}&cid={{cid}}">
-                        Delete</a>
-                </nav>
+                {% if user.name == entry.get_comment_author(cid) %}
+                    <nav class="edits">
+                        <a href="/blog/{{entry.get_id()}}/editcmt?cid={{cid}}">
+                            Edit</a>
+                        <a href="/blog/{{entry.get_id()}}/delcmt?cid={{cid}}">
+                            Delete</a>
+                    </nav>
+                {% endif %}
 
             </div>
         </div>

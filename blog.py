@@ -466,16 +466,14 @@ class LikeHandler(Handler):
 
 # New comment page handler
 class NewComment(Handler):
-    def get(self):
+    def get(self, blog_id):
         # Get post from id
-        blog_id = self.get_post_id()
-        blog_post = BlogPost.get_by_id(blog_id)
+        blog_post = BlogPost.get_by_id(int(blog_id))
         self.render('comment.html', entry=blog_post)
 
-    def post(self):
+    def post(self, blog_id):
         # Get post from id
-        blog_id = self.get_post_id()
-        blog_post = BlogPost.get_by_id(blog_id)
+        blog_post = BlogPost.get_by_id(int(blog_id))
         # Check user
         if self.user:
             # Get action
@@ -492,7 +490,7 @@ class NewComment(Handler):
                     blog_post.add_comment(cid)
                     blog_post.put()
                     # Redirect to permalink page
-                    self.redirect('/blog/%d' % blog_id)
+                    self.redirect('/blog/%d' % int(blog_id))
                 else:
                     # Error, so return to form
                     error = "Please enter a comment"
@@ -500,7 +498,7 @@ class NewComment(Handler):
                                 error=error)
             else:
                 # Cancel the edit and redirect to permalink page
-                self.redirect('/blog/%d' % blog_id)
+                self.redirect('/blog/%d' % int(blog_id))
         else:
             # user is invalid or not logged in
             self.redirect('/blog/login')
@@ -508,10 +506,9 @@ class NewComment(Handler):
 
 # Edit comment page handler
 class EditComment(Handler):
-    def get(self):
+    def get(self, blog_id):
         # Get post from id
-        blog_id = self.get_post_id()
-        blog_post = BlogPost.get_by_id(blog_id)
+        blog_post = BlogPost.get_by_id(int(blog_id))
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
@@ -526,10 +523,9 @@ class EditComment(Handler):
         else:
             self.redirect('/blog/login')
 
-    def post(self):
+    def post(self, blog_id):
         # Get post from id
-        blog_id = self.get_post_id()
-        blog_post = BlogPost.get_by_id(blog_id)
+        blog_post = BlogPost.get_by_id(int(blog_id))
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
@@ -546,7 +542,7 @@ class EditComment(Handler):
                         comment.update_text(text)
                         comment.put()
                         # Redirect to permalink page
-                        self.redirect('/blog/%d' % blog_id)
+                        self.redirect('/blog/%d' % int(blog_id))
                     else:
                         # Error, so return to form
                         error = "Please enter a comment"
@@ -554,10 +550,10 @@ class EditComment(Handler):
                             error=error)
                 else:
                     # Cancel the edit and redirect to permalink page
-                    self.redirect('/blog/%d' % blog_id)
+                    self.redirect('/blog/%d' % int(blog_id))
             else:
                 # Cancel the edit and redirect to permalink page
-                self.redirect('/blog/%d' % blog_id)
+                self.redirect('/blog/%d' % int(blog_id))
         else:
             # user is invalid or not logged in
             self.redirect('/blog/login')
@@ -565,10 +561,9 @@ class EditComment(Handler):
 
 # Delete comment handler
 class DeleteComment(Handler):
-    def get(self):
+    def get(self, blog_id):
         # Get post from id
-        blog_id = self.get_post_id()
-        blog_post = BlogPost.get_by_id(blog_id)
+        blog_post = BlogPost.get_by_id(int(blog_id))
         # Get comment from id
         cid = self.get_comment_id()
         comment = Comment.get_by_id(cid)
@@ -581,7 +576,7 @@ class DeleteComment(Handler):
                 # Delete comment
                 comment.delete()
                 # redirect to permalink page
-                self.redirect('/blog/%d' % blog_id)
+                self.redirect('/blog/%d' % int(blog_id))
             else:
                 # Action not allowed
                 error = "Users can only delete comments they have made."
@@ -602,7 +597,7 @@ app = webapp2.WSGIApplication([
     ('/blog/delpost', DeletePost),
     (r'/blog/(\d+)', PermalinkHandler),
     (r'/blog/(\d+)/like', LikeHandler),
-    ('/blog/comment', NewComment),
-    ('/blog/editcmt', EditComment),
-    ('/blog/delcmt', DeleteComment)
+    (r'/blog/(\d+)/comment', NewComment),
+    (r'/blog/(\d+)/editcmt', EditComment),
+    (r'/blog/(\d+)/delcmt', DeleteComment)
 ], debug=True)
