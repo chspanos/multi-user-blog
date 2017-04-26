@@ -66,7 +66,7 @@ hr {
 }
 
 .blog-author {
-  font-size: 12px;
+  font-size: 14px;
   font-style: italic;
   width: 50%;
 }
@@ -95,6 +95,12 @@ hr {
   margin: 0;
   font-size: 14px;
   white-space: pre-wrap;
+}
+
+.comment-author {
+  font-size: 12px;
+  font-style: italic;
+  width: 50%;
 }
 
 .comment-div {
