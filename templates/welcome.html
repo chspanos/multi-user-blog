@@ -3,42 +3,43 @@
 {% block content %}
 <h2>Welcome, {{username}}!</h2>
 
-<form method="post">
-    <table>
-        <caption>Your Blog Posts</caption>
-        <thead>
-            <tr>
-                <th>Date created</th>
-                <th>Subject</th>
-                <th colspan="2">Edit?</th>
-            </tr>
-        </thead>
-        {% for entry in entries %}
-            <tr>
-                <td class="date">{{entry.created.strftime("%b %d, %Y")}}</td>
-                <td class="subject">
-                  <a href="/blog/{{entry.get_id()}}">{{entry.subject}}</a>
-                </td>
-                <td>
-                      <input type="radio" name="post-action" value="edit|{{entry.get_id()}}">
-                      Edit
-                </td>
-                <td>
-                      <input type="radio" name="post-action" value="del|{{entry.get_id()}}">
-                      Delete
-                </td>
-            </tr>
-        {% endfor %}
-    </table>
-    <br>
-    <div class="newpost">
-        <input type="radio" name="post-action" value="newpost">
-        Create a New Post
-    </div>
-    <br>
-    <input type=submit>
-</form>
+<nav class="newpost">
+    <a href="/blog/newpost">Create a New Post</a>
+</nav>
+
+<table>
+    <caption>Your Blog Posts</caption>
+    <thead>
+        <tr>
+            <th>Date created</th>
+            <th>Subject</th>
+            <th colspan="2">Edit?</th>
+        </tr>
+    </thead>
+    {% for entry in entries %}
+        <tr>
+            <td class="date">{{entry.created.strftime("%b %d, %Y")}}</td>
+            <td class="subject">
+              <a href="/blog/{{entry.get_id()}}">{{entry.subject}}</a>
+            </td>
+            <td>
+                  <nav class="table-edits">
+                      <a href="/blog/editpost?blog_id={{entry.get_id()}}">
+                        Edit
+                      </a>
+                  </nav>
+            </td>
+            <td>
+                  <nav class="table-edits">
+                      <a href="/blog/delpost?blog_id={{entry.get_id()}}">
+                        Delete
+                      </a>
+                  </nav>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+<br>
 <p>{{error}}</p>
 
-<p>Done? <a href="/blog/logout">Logout</a> </p>
 {% endblock %}

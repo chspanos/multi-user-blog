@@ -295,27 +295,6 @@ class WelcomeHandler(Handler):
         else:
             self.redirect('/blog/signup')
 
-    def post(self):
-        action = self.request.get("post-action")
-        if action and action == "newpost":
-            self.redirect('/blog/newpost')
-        elif action:
-            # Parse the action
-            code = action.split('|')[0]
-            post_id = int(action.split('|')[1])
-            if code == "edit":
-                # Edit blog post
-                self.redirect('/blog/editpost?blog_id=%d' % post_id)
-            elif code == "del":
-                # Delete blog post
-                self.redirect('/blog/delpost?blog_id=%d' % post_id)
-            else:
-                # Error
-                self.redirect('/blog/welcome')
-        else:
-            # Error
-            self.redirect('/blog/welcome')
-
 
 # Front Blog page
 class MainPage(Handler):
@@ -372,8 +351,12 @@ class EditPost(Handler):
                 subject = post.subject
                 content = post.content
                 self.render('form.html', subject=subject, content=content)
+            elif self.user:
+                # invalid user
+                msg = "Users can only edit their own posts"
+                self.render('permalink.html', entry=post, error=msg)
             else:
-                # invalid user so redirect to login
+                # user is not logged in, so redirect to login
                 self.redirect('/blog/login')
         else:
             # invalid post so redirect to welcome page
@@ -407,8 +390,12 @@ class EditPost(Handler):
                 else:
                     # Cancel the edit and redirect to permalink page
                     self.redirect('/blog/%d' % blog_id)
+            elif self.user:
+                # User is invalid
+                msg = "Users can only edit their own posts"
+                self.render('permalink.html', entry=blog_post, error=msg)
             else:
-                # User is invalid or not logged in
+                # User is not logged in, so redirect to login
                 self.redirect('/blog/login')
         else:
             # Invalid post so redirect to welcome page
@@ -427,8 +414,12 @@ class DeletePost(Handler):
                 # Delete entry
                 blog_post.delete()
                 self.redirect('/blog/welcome')
-            else:
+            elif self.user:
                 # Invalid user, action not allowed
+                msg = "Users can only delete their own posts"
+                self.render('permalink.html', entry=blog_post, error=msg)
+            else:
+                # user not logged in, so redirect to login
                 self.redirect('/blog/login')
         else:
             # Invalid post, so redirect to welcome page
