@@ -12,18 +12,19 @@ The main page displays a list of posts, ordered with the most recent entries at 
 
 A working version of this website should be available at [https://hello-udacity83.appspot.com/blog](https://hello-udacity83.appspot.com/blog)
 
-Alternatively, you can install Google App Engine SDK and sign up for a Google App Engine Account. Follow their instructions to create your unique appspot.com project site and get a sample app up and running.
+Alternatively, you can install Google App Engine SDK (select the Python version) and sign up for a Google App Engine Account. Follow their instructions to create your unique appspot.com project site and get a sample app up and running.
 
 To run my application, you will need to download the following files from my github repository:
 * `app.yaml` - Configuration information, which tells the Google App Engine where to find the needed files and templates
+* `index.yaml` - File used by the datastore to create indexes for queries
 * `blog.py` - Contains the server-side code to create and launch the website.
 * `templates/*.html` - Subdirectory containing 9 HTML templates for the various blog pages.
 * `static/css/*.css` - Subdirectory containing the 2 CSS style files needed to format the HTML.
 
-Once all files are downloaded, open your Google Cloud SDK Shell. Go to the directory containing the blog code. Deploy your project with `gcloud app deploy`. Visit your appspot.com site to view your blog.
+Once all files are downloaded, open your Google Cloud SDK Shell. Go to the directory containing the blog code. Deploy your project with `gcloud app deploy index.yaml`. Visit your appspot.com site to view your blog.
 
 #### Attributions
 
 This project is part of Udacity's Full Stack Web Developer nanodegree.
 
-For more information on Google App Engine, visit [https://cloud.google.com/appengine/downloads](https://cloud.google.com/appengine/downloads)
+For more information on Google App Engine, check out the documentation at  [https://cloud.google.com/appengine/docs/](https://cloud.google.com/appengine/docs/)
