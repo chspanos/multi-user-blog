@@ -162,6 +162,14 @@ class BlogPost(db.Model):
         """ Deletes this comment id from the comments list """
         self.comments.remove(cid)
 
+    def delete_post(self):
+        """ Deletes this blog post """
+        # delete all comments associated with this post
+        for cid in self.comments:
+            Comment.delete_comment(cid)
+        # delete this post
+        self.delete()
+
 
 # Create our comment database
 class Comment(db.Model):
@@ -201,6 +209,13 @@ class Comment(db.Model):
         """ Updates comment text attribute. Note: You still
         need to put() to update database. """
         self.text = text
+
+    @classmethod
+    def delete_comment(cls, cid):
+        """ Looks up comment by id and deletes it """
+        comment = cid and cls.get_by_id(cid)
+        if comment:
+            comment.delete()
 
 
 # Page Handlers
@@ -488,7 +503,7 @@ class DeletePost(Handler):
             # Check for author of post
             if self.user and blog_post.valid_author(self.user):
                 # Delete entry
-                blog_post.delete()
+                blog_post.delete_post()
                 self.redirect('/blog/welcome')
             elif self.user:
                 # Invalid user, action not allowed
