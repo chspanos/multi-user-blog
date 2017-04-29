@@ -21,20 +21,20 @@
     <br>
     <br>
 
-    {% for cid in entry.comments %}
+    {% for cmt in comments %}
         <div class="blog-comment">
             <hr class="comment-div">
-            <pre class="comment-body">{{entry.get_comment(cid)}}</pre>
+            <pre class="comment-body">{{cmt.text}}</pre>
             <div class="blog-footer">
                 <div class="comment-author">
-                    Comment by {{entry.get_comment_author(cid)}}
+                    Comment by {{cmt.get_author()}}
                 </div>
 
-                {% if user.name == entry.get_comment_author(cid) %}
+                {% if user.name == cmt.get_author() %}
                     <nav class="edits">
-                        <a href="/blog/{{entry.get_id()}}/editcmt?cid={{cid}}">
+                        <a href="/blog/{{entry.get_id()}}/editcmt?cid={{cmt.get_id()}}">
                             Edit</a>
-                        <a href="/blog/{{entry.get_id()}}/delcmt?cid={{cid}}">
+                        <a href="/blog/{{entry.get_id()}}/delcmt?cid={{cmt.get_id()}}">
                             Delete</a>
                     </nav>
                 {% endif %}
