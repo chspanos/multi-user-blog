@@ -58,7 +58,6 @@ class Handler(webapp2.RequestHandler):
         """ Queries page input for comment id and returns it as an int. """
         return int(self.request.get('cid'))
 
-    @decorator.comment_exists
     def get_valid_comment(self, cid):
         """ Looks up comment by its id and returns comment """
         key = db.Key.from_path('Comment',int(cid))
