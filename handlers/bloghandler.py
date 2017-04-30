@@ -3,8 +3,10 @@ import os
 
 import jinja2
 import webapp2
+from google.appengine.ext import db
 
 import utils
+import decorator
 from models.user import User
 from models.post import BlogPost
 from models.comment import Comment
@@ -55,3 +57,10 @@ class Handler(webapp2.RequestHandler):
     def get_comment_id(self):
         """ Queries page input for comment id and returns it as an int. """
         return int(self.request.get('cid'))
+
+    @decorator.comment_exists
+    def get_valid_comment(self, cid):
+        """ Looks up comment by its id and returns comment """
+        key = db.Key.from_path('Comment',int(cid))
+        cmt = db.get(key)
+        return cmt

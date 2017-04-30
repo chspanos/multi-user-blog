@@ -43,7 +43,7 @@ class Comment(db.Model):
     @classmethod
     def get_author_by_id(cls, cid):
         """ Looks up comment by id and returns its author's username """
-        comment = cid and cls.get_by_id(cid)
+        comment = cid and cls.get_by_id(int(cid))
         user_obj = comment and comment.author
         return user_obj and user_obj.name
 
@@ -60,7 +60,7 @@ class Comment(db.Model):
     @classmethod
     def delete_comment(cls, cid):
         """ Looks up comment by id and deletes it """
-        cmt = cid and cls.get_by_id(cid)
+        cmt = cid and cls.get_by_id(int(cid))
         if cmt:
             cmt.delete()
 

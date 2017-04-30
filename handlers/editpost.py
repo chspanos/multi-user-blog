@@ -1,5 +1,6 @@
 # Edit blog post page
 import bloghandler
+import decorator
 from models.post import BlogPost
 from models.comment import Comment
 
@@ -8,6 +9,7 @@ class EditPost(bloghandler.Handler):
     """ EditPost handler reloads the form HTML template with the contents
     of a previous blog post entry and allows the User to edit its contents.
     """
+    @decorator.user_logged_in
     def get(self):
         # Get post from id
         blog_id = self.get_post_id()
@@ -19,19 +21,17 @@ class EditPost(bloghandler.Handler):
                 subject = blog_post.subject
                 content = blog_post.content
                 self.render('form.html', subject=subject, content=content)
-            elif self.user:
+            else:
                 # invalid user
                 msg = "Users can only edit their own posts"
                 comments = Comment.get_comments(blog_post.comments)
                 self.render('permalink.html', entry=blog_post,
                         comments=comments, error=msg)
-            else:
-                # user is not logged in, so redirect to login
-                self.redirect('/blog/login')
         else:
             # invalid post so redirect to welcome page
             self.redirect('/blog/welcome')
 
+    @decorator.user_logged_in
     def post(self):
         # Get post from id
         blog_id = self.get_post_id()
@@ -60,15 +60,12 @@ class EditPost(bloghandler.Handler):
                 else:
                     # Cancel the edit and redirect to permalink page
                     self.redirect('/blog/%d' % blog_id)
-            elif self.user:
+            else:
                 # User is invalid
                 msg = "Users can only edit their own posts"
                 comments = Commment.get_comments(blog_post.comments)
                 self.render('permalink.html', entry=blog_post,
                         comments=comments, error=msg)
-            else:
-                # User is not logged in, so redirect to login
-                self.redirect('/blog/login')
         else:
             # Invalid post so redirect to welcome page
             self.redirect('/blog/welcome')

@@ -1,5 +1,6 @@
 # Permalink blog page
 import bloghandler
+import decorator
 from models.post import BlogPost
 from models.comment import Comment
 
@@ -11,6 +12,7 @@ class PermalinkHandler(bloghandler.Handler):
     registered users to like this post and create, edit, and delete
     user-owned comments.
     """
+    @decorator.post_exists
     def get(self, blog_id):
         entry = BlogPost.get_by_id(int(blog_id))
         comments = Comment.get_comments(entry.comments)

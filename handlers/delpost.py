@@ -1,5 +1,6 @@
 # Delete post handler
 import bloghandler
+import decorator
 from models.post import BlogPost
 from models.comment import Comment
 
@@ -8,6 +9,7 @@ class DeletePost(bloghandler.Handler):
     """ DeletePost page handler process a User request to delete their post
     from the blog database.
     """
+    @decorator.user_logged_in
     def get(self):
         # Get post from id
         blog_id = self.get_post_id()
@@ -20,15 +22,12 @@ class DeletePost(bloghandler.Handler):
                 # Delete the post
                 blog_post.delete()
                 self.redirect('/blog/welcome')
-            elif self.user:
+            else:
                 # Invalid user, action not allowed
                 msg = "Users can only delete their own posts"
                 comments = Comment.get_comments(blog_post.comments)
                 self.render('permalink.html', entry=blog_post,
                         comments=comments, error=msg)
-            else:
-                # user not logged in, so redirect to login
-                self.redirect('/blog/login')
         else:
             # Invalid post, so redirect to welcome page
             self.redirect('/blog/welcome')
