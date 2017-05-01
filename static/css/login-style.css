@@ -9,6 +9,10 @@ h1 {
   text-align: center;
 }
 
+.input-entry {
+  margin-bottom: 12px;
+}
+
 .error {
   color: red;
 }
