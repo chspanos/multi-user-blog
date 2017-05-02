@@ -34,7 +34,10 @@ To run my application, you will also need to download the following files from m
 * `templates/*.html` - Subdirectory containing the HTML templates for the various blog pages
 * `static/css/*.css` - Subdirectory containing the CSS style files needed to format the HTML
 
-Once all files are downloaded, open your Google Cloud SDK Shell. Go to the directory containing the blog code. Deploy your project with `gcloud app deploy index.yaml`. Visit your appspot.com site to view your blog.
+Once all files are downloaded, open your Google Cloud SDK Shell. Go to the directory containing the blog code.
+* Upload the index with `gcloud datastore create-indexes index.yaml`. It might take a little while for the indexes to be built. You can check on its status in your [Google Developer Console](https://www.console.cloud.google.com)
+* Once the indexes are built, deploy your project with `gcloud app deploy`.
+* Visit your appspot.com site to view your blog.
 
 ### How to setup Google App Engine
 
